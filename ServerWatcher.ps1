@@ -9,20 +9,20 @@ function Get-ComputerStats {
       process {
             foreach ($c in $ComputerName ) {
                   if ([bool](Test-Connection $ComputerName -Count 1 -ErrorAction SilentlyContinue)) {
-                        $avg = Get-WmiObject win32_processor -computername $c | 
-                        Measure-Object -property LoadPercentage -Average | 
-                        Foreach { $_.Average }
+                        $avg = "" + (gcim win32_processor -computername $c | Measure-Object -property LoadPercentage -Average | Foreach { $_.Average }) + "%"
 
-                        $mem = Get-WmiObject win32_operatingsystem -ComputerName $c |
+                        $mem = gcim win32_operatingsystem -ComputerName $c |
                         Foreach { "{0:N2}" -f ((($_.TotalVisibleMemorySize - $_.FreePhysicalMemory) * 100) / $_.TotalVisibleMemorySize) }
 
-                        $freeC = Get-WmiObject Win32_Volume -ComputerName $c -Filter "DriveLetter = 'C:'" |
+                        $freeC = gcim Win32_Volume -ComputerName $c -Filter "DriveLetter = 'C:'" |
                         Foreach { "{0:N2}" -f ($_.FreeSpace / 1GB) }
 
-                        $freeD = Get-WmiObject Win32_Volume -ComputerName $c -Filter "DriveLetter = 'D:'" |
+                        $freeD = gcim Win32_Volume -ComputerName $c -Filter "DriveLetter = 'D:'" |
                         Foreach { "{0:N2}" -f ($_.FreeSpace / 1GB) }
 
-                        $net = if ([bool](Test-Connection -ComputerName google.com -Source $ComputerName -Count 1 -ErrorAction SilentlyContinue)) { $netresult = "Connected" } else { $netresult = "Disconnected" }
+                        $net = if ([bool](Test-Connection -ComputerName google.com -Source $c -Count 1 -ErrorAction SilentlyContinue)) { $netresult = "Connected" } else { $netresult = "Disconnected" }
+
+                        $upt = Invoke-Command -ComputerName $c -ScriptBlock { ("" + ((get-date) - (gcim Win32_OperatingSystem).LastBootUpTime).days) + "-Days " + ((get-date) - (gcim Win32_OperatingSystem).LastBootUpTime).hours + "-Hours " + ((get-date) - (gcim Win32_OperatingSystem).LastBootUpTime).minutes + "-Mins"}
 
                         #Color Text
                         if ( $avg -lt 9 ) {
@@ -50,6 +50,7 @@ function Get-ComputerStats {
                               'SpaceAvail_C' = $freeC + 'GB'
                               'SpaceAvail_D' = $freeD + 'GB'
                               'Internet'     = $netresult
+                              'UpTime'       = $upt
                         }
                   }
                   else {
@@ -63,6 +64,7 @@ function Get-ComputerStats {
                               'SpaceAvail_C' = 'OFFLINE'
                               'SpaceAvail_D' = 'OFFLINE'
                               'Internet'     = 'OFFLINE'
+                              'UpTime'       = 'OFFLINE'
                         }
                   }
             }
@@ -73,6 +75,6 @@ function Get-ComputerStats {
   
 
 while ($true) {
-      type '.\server.txt' | Get-ComputerStats | ft -AutoSize
+      type '.\server1.txt' | Get-ComputerStats | ft -AutoSize
       start-sleep -s 5
 }
