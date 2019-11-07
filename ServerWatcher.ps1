@@ -9,32 +9,39 @@ function Get-ComputerStats {
       process {
             foreach ($c in $ComputerName ) {
                   if ([bool](Test-Connection $ComputerName -Count 1 -ErrorAction SilentlyContinue)) {
-                        $avg = "" + (gcim win32_processor -computername $c | Measure-Object -property LoadPercentage -Average | Foreach { $_.Average }) + "%"
+                        $cpu = (Get-WmiObject win32_processor -computername $c | Measure-Object -property LoadPercentage -Average | Foreach { $_.Average })
 
-                        $mem = gcim win32_operatingsystem -ComputerName $c |
+                        #Weird powershell fix.
+                        $avg = "" + $cpu + "%"
+
+                        $mem = Get-WmiObject win32_operatingsystem -ComputerName $c |
                         Foreach { "{0:N2}" -f ((($_.TotalVisibleMemorySize - $_.FreePhysicalMemory) * 100) / $_.TotalVisibleMemorySize) }
 
-                        $freeC = gcim Win32_Volume -ComputerName $c -Filter "DriveLetter = 'C:'" |
+                        $freeC = Get-WmiObject Win32_Volume -ComputerName $c -Filter "DriveLetter = 'C:'" |
                         Foreach { "{0:N2}" -f ($_.FreeSpace / 1GB) }
 
-                        $freeD = gcim Win32_Volume -ComputerName $c -Filter "DriveLetter = 'D:'" |
+                        $freeD = Get-WmiObject Win32_Volume -ComputerName $c -Filter "DriveLetter = 'D:'" |
                         Foreach { "{0:N2}" -f ($_.FreeSpace / 1GB) }
 
                         $net = if ([bool](Test-Connection -ComputerName google.com -Source $c -Count 1 -ErrorAction SilentlyContinue)) { $netresult = "Connected" } else { $netresult = "Disconnected" }
 
+                        #Command ONLY works on Server 2012 and forward (gcim vs Get-WmiObject).
                         $upt = Invoke-Command -ComputerName $c -ScriptBlock { ("" + ((get-date) - (gcim Win32_OperatingSystem).LastBootUpTime).days) + "-Days " + ((get-date) - (gcim Win32_OperatingSystem).LastBootUpTime).hours + "-Hours " + ((get-date) - (gcim Win32_OperatingSystem).LastBootUpTime).minutes + "-Mins"}
 
+                        #UpTime Command for Server 2008 and before.
+                        #$upt = Get-WinEvent -ProviderName EventLog | Where-Object {$_.Id -eq 6005} | Select-Object -First 1 TimeCreated
+
                         #Color Text
-                        if ( $avg -lt 9 ) {
+                        if ( $cpu -lt 9 ) {
                               $Host.UI.RawUI.ForegroundColor = 'White'
                         }
-                        if ( $avg -gt 9 ) {
+                        if ( $cpu -gt 9 ) {
                               $Host.UI.RawUI.ForegroundColor = 'Green'
                         } 
-                        if ( $avg -gt 29 ) {
+                        if ( $cpu -gt 29 ) {
                               $Host.UI.RawUI.ForegroundColor = 'Yellow'
                         }
-                        if ( $avg -gt 69 -or $net -eq $False ) {
+                        if ( $cpu -gt 69 ) {
                               $Host.UI.RawUI.ForegroundColor = 'Red'
                         }
                         if ( $netresult -eq "Disconnected" ) {
@@ -75,6 +82,6 @@ function Get-ComputerStats {
   
 
 while ($true) {
-      type '.\server1.txt' | Get-ComputerStats | ft -AutoSize
+      type '.\server.txt' | Get-ComputerStats | ft -AutoSize
       start-sleep -s 5
 }
