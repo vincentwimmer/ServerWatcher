@@ -12,7 +12,7 @@ A basic system monitor script written in Powershell to monitor resources and int
 > - CPU Usage in percents. > Text color will change based on load.
 > - Memory Usage in percents.
 > - Remaining Free Space on Disk C: in Gigabytes.
-> - Remaining Free Space on Disk D: in Gigabytes. (Will register as 'GB' if no drive is found)
+> - Remaining Free Space on Disk D: in Gigabytes. > Will register as 'GB' if no drive is found > Change drive letter in code.
 > - Internet Connectivity by making system ping google.com. > Text color will change red if disconnected.
 > - System UpTime > Format differs between 2008 and 2012
 
