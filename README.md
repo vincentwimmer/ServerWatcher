@@ -14,6 +14,6 @@ A basic system monitor script written in Powershell to monitor resources and int
 > - Remaining Free Space on Disk C: in Gigabytes.
 > - Remaining Free Space on Disk D: in Gigabytes. (Will register as 'GB' if no drive is found)
 > - Internet Connectivity by making system ping google.com. > Text color will change red if disconnected.
-> - System UpTime
+> - System UpTime > Format differs between 2008 and 2012
 
 ###### Feel free to edit the code however you see fit!
