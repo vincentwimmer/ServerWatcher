@@ -25,10 +25,10 @@ function Get-ComputerStats {
 
                         $net = if ([bool](Test-Connection -ComputerName google.com -Source $c -Count 1 -ErrorAction SilentlyContinue)) { $netresult = "Connected" } else { $netresult = "Disconnected" }
 
-                        #Command ONLY works on Server 2012 and forward (gcim vs Get-WmiObject).
+                        #Command ONLY works on Windows Server 2012 and forward (gcim vs Get-WmiObject).
                         $upt = Invoke-Command -ComputerName $c -ScriptBlock { ("" + ((get-date) - (gcim Win32_OperatingSystem).LastBootUpTime).days) + "-Days " + ((get-date) - (gcim Win32_OperatingSystem).LastBootUpTime).hours + "-Hours " + ((get-date) - (gcim Win32_OperatingSystem).LastBootUpTime).minutes + "-Mins"}
 
-                        #UpTime Command for Server 2008 and before.
+                        #UpTime Command for Windows Server 2008 and before.
                         #$upt = Get-WinEvent -ProviderName EventLog | Where-Object {$_.Id -eq 6005} | Select-Object -First 1 TimeCreated
 
                         #Color Text
