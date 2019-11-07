@@ -9,7 +9,10 @@ function Get-ComputerStats {
       process {
             foreach ($c in $ComputerName ) {
                   if ([bool](Test-Connection $ComputerName -Count 1 -ErrorAction SilentlyContinue)) {
-                        $avg = "" + (Get-WmiObject win32_processor -computername $c | Measure-Object -property LoadPercentage -Average | Foreach { $_.Average }) + "%"
+                        $cpu = (Get-WmiObject win32_processor -computername $c | Measure-Object -property LoadPercentage -Average | Foreach { $_.Average })
+
+                        #Weird powershell fix.
+                        $avg = "" + $cpu + "%"
 
                         $mem = Get-WmiObject win32_operatingsystem -ComputerName $c |
                         Foreach { "{0:N2}" -f ((($_.TotalVisibleMemorySize - $_.FreePhysicalMemory) * 100) / $_.TotalVisibleMemorySize) }
@@ -22,17 +25,23 @@ function Get-ComputerStats {
 
                         $net = if ([bool](Test-Connection -ComputerName google.com -Source $c -Count 1 -ErrorAction SilentlyContinue)) { $netresult = "Connected" } else { $netresult = "Disconnected" }
 
+                        #Command ONLY works on Windows Server 2012 and forward (gcim vs Get-WmiObject).
+                        #$upt = Invoke-Command -ComputerName $c -ScriptBlock { ("" + ((get-date) - (gcim Win32_OperatingSystem).LastBootUpTime).days) + "-Days " + ((get-date) - (gcim Win32_OperatingSystem).LastBootUpTime).hours + "-Hours " + ((get-date) - (gcim Win32_OperatingSystem).LastBootUpTime).minutes + "-Mins"}
+
+                        #UpTime Command for Windows Server 2008 and before.
+                        $upt = Get-WinEvent -ProviderName EventLog | Where-Object {$_.Id -eq 6005} | Select-Object -First 1 TimeCreated
+
                         #Color Text
-                        if ( $avg -lt 9 ) {
+                        if ( $cpu -lt 9 ) {
                               $Host.UI.RawUI.ForegroundColor = 'White'
                         }
-                        if ( $avg -gt 9 ) {
+                        if ( $cpu -gt 9 ) {
                               $Host.UI.RawUI.ForegroundColor = 'Green'
                         } 
-                        if ( $avg -gt 29 ) {
+                        if ( $cpu -gt 29 ) {
                               $Host.UI.RawUI.ForegroundColor = 'Yellow'
                         }
-                        if ( $avg -gt 69 -or $net -eq $False ) {
+                        if ( $cpu -gt 69 ) {
                               $Host.UI.RawUI.ForegroundColor = 'Red'
                         }
                         if ( $netresult -eq "Disconnected" ) {
@@ -48,6 +57,7 @@ function Get-ComputerStats {
                               'SpaceAvail_C' = $freeC + 'GB'
                               'SpaceAvail_D' = $freeD + 'GB'
                               'Internet'     = $netresult
+                              'UpTime'       = $upt
                         }
                   }
                   else {
@@ -61,6 +71,7 @@ function Get-ComputerStats {
                               'SpaceAvail_C' = 'OFFLINE'
                               'SpaceAvail_D' = 'OFFLINE'
                               'Internet'     = 'OFFLINE'
+                              'UpTime'       = 'OFFLINE'
                         }
                   }
             }
